@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+pytest
+python-multipart
+transformers
+sentencepiece
+easyocr
