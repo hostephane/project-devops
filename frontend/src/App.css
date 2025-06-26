@@ -1,0 +1,106 @@
+/* App.css */
+
+.App {
+  font-family: Arial, sans-serif;
+  color: #333;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+h1, h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+input[type="file"] {
+  cursor: pointer;
+}
+
+button {
+  background-color: #3498db;
+  border: none;
+  color: white;
+  padding: 8px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+.App > div {
+  /* Les deux parties gauche/droite */
+  border: 1px solid #ccc;
+  padding: 15px;
+  box-sizing: border-box;
+  background-color: #fafafa;
+  border-radius: 6px;
+}
+
+.App > div:first-child {
+  flex: 1;
+  margin-right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.App > div:last-child {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+img {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+form {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+form input[type="file"] {
+  flex-grow: 1;
+}
+
+form button {
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 0;
+}
+
+li {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+strong {
+  color: #34495e;
+}
+
+em {
+  color: #7f8c8d;
+  font-size: 0.9em;
+}

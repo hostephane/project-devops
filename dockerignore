@@ -1,0 +1,33 @@
+# Environnements virtuels Python
+backend/.venv
+backend/__pycache__/
+backend/**/*.pyc
+
+# Node modules pour le frontend
+frontend/node_modules
+frontend/dist
+
+# Fichiers temporaires, caches et logs
+**/__pycache__/
+**/*.pyc
+*.log
+*.tmp
+*.cache
+
+# Git et fichiers de config IDE
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Fichiers systèmes
+.DS_Store
+Thumbs.db
+
+# Dockerfile lui-même (optionnel)
+Dockerfile
+
+# Tests, notebooks, docs (si tu veux exclure)
+tests/
+*.ipynb
+docs/
