@@ -25,10 +25,13 @@ jobs:
 
       - name: Run backend tests
         working-directory: ./backend
+        env:
+          # Indiquer à Python de chercher les modules à partir de ./backend
+          PYTHONPATH: ${{ github.workspace }}/backend
         run: |
           pytest tests/unit tests/integration || exit 1
 
-      # Si tu as un frontend NodeJS, ajoute :
+      # Si tu as un frontend NodeJS, ajoute ces étapes :
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -68,13 +71,14 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
+        working-directory: ./backend
         run: |
           docker build -t yourdockerhubusername/yourapp:latest .
 
       - name: Push Docker image
+        working-directory: ./backend
         run: |
           docker push yourdockerhubusername/yourapp:latest
 
       # Ajouter étape de déploiement vers ta plateforme cloud
       # Par exemple pour Railway avec leur CLI, Koyeb, etc.
-
