@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware  # <-- Ajouté
 import easyocr
 from io import BytesIO
 from PIL import Image
@@ -8,6 +9,15 @@ from transformers import MarianMTModel, MarianTokenizer
 import re
 
 app = FastAPI()
+
+# Middleware CORS pour autoriser le frontend à se connecter
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # autorise le frontend React
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # OCR reader
 reader = easyocr.Reader(['ja', 'en'])
