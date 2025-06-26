@@ -1,5 +1,8 @@
 name: CI Pipeline
 
+permissions:
+  contents: write  # Permet à GitHub Actions de faire des pushs dans le repo
+
 on:
   pull_request:
     branches: [dev]
