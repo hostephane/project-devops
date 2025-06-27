@@ -72,12 +72,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        working-directory: ./backend
         run: |
           docker build -t jhoozou/project-devops:latest .
 
       - name: Push Docker image
-        working-directory: ./backend
         run: |
           docker push jhoozou/project-devops:latest
 
