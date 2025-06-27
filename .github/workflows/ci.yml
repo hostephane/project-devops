@@ -77,4 +77,5 @@ jobs:
       - name: Push Docker image
         run: docker push jhoozou/project-devops:latest
 
-      # Ici tu peux ajouter une étape de déploiement vers ta plateforme cloud, par ex. Google Cloud Run, Railway, Koyeb...
+      # Ajouter étape de déploiement vers ta plateforme cloud
+      # Par exemple pour Railway avec leur CLI, Koyeb, etc.
