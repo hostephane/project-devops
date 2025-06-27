@@ -6,3 +6,4 @@ transformers
 sentencepiece
 easyocr
 httpx
+python-multipart
