@@ -58,7 +58,7 @@ jobs:
         run: git push -f origin dev:staging
 
   build-and-deploy:
-    needs: push-to-staging
+    needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
