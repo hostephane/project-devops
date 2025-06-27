@@ -72,11 +72,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: |
-          docker build -f backend/Dockerfile -t jhoozou/project-devops:latest backend/
+        run: docker build -f backend/Dockerfile -t jhoozou/project-devops:latest backend/
 
       - name: Push Docker image
-        run: |
-          docker push jhoozou/project-devops:latest
+        run: docker push jhoozou/project-devops:latest
 
       # Ici tu peux ajouter une étape de déploiement vers ta plateforme cloud, par ex. Google Cloud Run, Railway, Koyeb...
