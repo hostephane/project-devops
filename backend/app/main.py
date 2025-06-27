@@ -8,6 +8,10 @@ from transformers import MarianMTModel, MarianTokenizer
 import easyocr
 import re
 from functools import lru_cache
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -15,8 +19,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "https://earnest-enjoyment-production.up.railway.app"
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -26,18 +29,22 @@ app.add_middleware(
 # Caches pour les modèles
 @lru_cache()
 def get_reader():
+    logger.info("Loading EasyOCR reader...")
     return easyocr.Reader(['ja', 'en'])
 
 @lru_cache()
 def get_tokenizer():
+    logger.info("Loading Marian tokenizer...")
     return MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
 
 @lru_cache()
 def get_model():
+    logger.info("Loading Marian model...")
     return MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
 
 def clean_text(text: str) -> str:
-    return re.sub(r"[^\wぁ-んァ-ン一-龥\s]", "", text).strip()
+    cleaned = re.sub(r"[^\wぁ-んァ-ン一-龥\s]", "", text)
+    return cleaned.strip()
 
 def translate_japanese_to_english(text: str) -> str:
     tokenizer = get_tokenizer()
@@ -48,26 +55,31 @@ def translate_japanese_to_english(text: str) -> str:
 
 @app.post("/translate-manga")
 async def translate_manga(file: UploadFile = File(...)):
-    contents = await file.read()
-    image = Image.open(BytesIO(contents)).convert('RGB')
-    img_array = np.array(image)
+    try:
+        contents = await file.read()
+        image = Image.open(BytesIO(contents)).convert('RGB')
+        img_array = np.array(image)
 
-    reader = get_reader()
-    results = reader.readtext(img_array)
+        reader = get_reader()
+        results = reader.readtext(img_array)
 
-    bubbles = []
-    for (bbox, text, prob) in results:
-        text = clean_text(text)
-        if len(text) == 0 or prob < 0.2:
-            continue
-        try:
-            translated = translate_japanese_to_english(text)
-        except Exception:
-            translated = "[Translation failed]"
-        bubbles.append({
-            "original_text": text,
-            "translated_text": translated,
-            "confidence": float(prob)
-        })
+        bubbles = []
+        for (bbox, text, prob) in results:
+            text = clean_text(text)
+            if len(text) == 0 or prob < 0.2:
+                continue
+            try:
+                translated = translate_japanese_to_english(text)
+            except Exception as e:
+                logger.warning(f"Translation failed for text '{text}': {e}")
+                translated = "[Translation failed]"
+            bubbles.append({
+                "original_text": text,
+                "translated_text": translated,
+                "confidence": float(prob)
+            })
 
-    return JSONResponse(content={"bubbles": bubbles})
+        return JSONResponse(content={"bubbles": bubbles})
+    except Exception as e:
+        logger.error(f"Error processing image: {e}")
+        return JSONResponse(content={"error": "Failed to process image"}, status_code=500)
