@@ -5,5 +5,5 @@ python-multipart
 transformers
 sentencepiece
 easyocr
-pytest
 httpx
+python-multipart
