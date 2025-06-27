@@ -58,7 +58,7 @@ jobs:
         run: git push -f origin dev:staging
 
   build-and-deploy:
-    needs: push-to-staging
+    needs: build-and-test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -72,15 +72,10 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        working-directory: ./backend
-        run: |
-          docker build -t jhoozou/project-devops:latest .
+        run: docker build -f backend/Dockerfile -t jhoozou/project-devops:latest backend/
 
       - name: Push Docker image
-        working-directory: ./backend
-        run: |
-          docker push jhoozou/project-devops:latest
-
+        run: docker push jhoozou/project-devops:latest
 
       # Ajouter étape de déploiement vers ta plateforme cloud
       # Par exemple pour Railway avec leur CLI, Koyeb, etc.

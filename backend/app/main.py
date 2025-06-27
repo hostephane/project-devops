@@ -18,12 +18,15 @@ app = FastAPI()
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ou liste spécifique, ex: ["http://localhost:5173"]
+    allow_origins=[
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Caches pour les modèles
 @lru_cache()
 def get_reader():
     logger.info("Loading EasyOCR reader...")
