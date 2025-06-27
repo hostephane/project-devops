@@ -64,7 +64,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-  
+
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -73,11 +73,10 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t jhoozou/project-devops:latest .
+          docker build -f backend/Dockerfile -t jhoozou/project-devops:latest backend/
 
       - name: Push Docker image
         run: |
           docker push jhoozou/project-devops:latest
 
-      # Ajouter étape de déploiement vers ta plateforme cloud
-      # Par exemple pour Railway avec leur CLI, Koyeb, etc.
+      # Ici tu peux ajouter une étape de déploiement vers ta plateforme cloud, par ex. Google Cloud Run, Railway, Koyeb...
