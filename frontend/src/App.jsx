@@ -35,7 +35,7 @@ function App() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/translate-manga", {
+      const response = await fetch("https://earnest-enjoyment-production.up.railway.app/translate-manga", {
         method: "POST",
         body: formData,
       });
