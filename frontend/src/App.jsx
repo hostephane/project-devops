@@ -24,6 +24,12 @@ function App() {
     setBubbles([]);
   };
 
+  const formatApiUrl = (url) => {
+    if (!url) return "http://localhost:8000/translate-manga";
+    // Si l'URL ne se termine pas par /translate-manga, on l'ajoute
+    return url.endsWith("/translate-manga") ? url : url.replace(/\/+$/, "") + "/translate-manga";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) return;
@@ -31,9 +37,12 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
+    const finalApiUrl = formatApiUrl(apiUrl);
+    console.log("Requête API vers :", finalApiUrl);
+
     setLoading(true);
     try {
-      const response = await fetch(apiUrl || "http://localhost:8000/translate-manga", {
+      const response = await fetch(finalApiUrl, {
         method: "POST",
         body: formData,
       });
@@ -57,7 +66,10 @@ function App() {
   return (
     <div className="app-container">
       {/* Champ API URL avec bouton */}
-      <div className="api-url-input" style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+      <div
+        className="api-url-input"
+        style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}
+      >
         <input
           type="text"
           value={apiUrl}
@@ -71,9 +83,7 @@ function App() {
         </button>
       </div>
       {confirmation && (
-        <div style={{ color: "green", marginBottom: "10px" }}>
-          URL de l'API mise à jour !
-        </div>
+        <div style={{ color: "green", marginBottom: "10px" }}>URL de l'API mise à jour !</div>
       )}
 
       <div className="main-content">
