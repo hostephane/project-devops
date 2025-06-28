@@ -7,6 +7,7 @@ function App() {
   const [bubbles, setBubbles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [apiUrl, setApiUrl] = useState("http://localhost:8000/translate-manga");
+  const [confirmation, setConfirmation] = useState(false);
 
   useEffect(() => {
     if (!file) {
@@ -48,18 +49,32 @@ function App() {
     setLoading(false);
   };
 
+  const handleConfirmClick = () => {
+    setConfirmation(true);
+    setTimeout(() => setConfirmation(false), 3000); // disparaît au bout de 3 secondes
+  };
+
   return (
     <div className="app-container">
-      {/* Champ API URL (discret mais modifiable) */}
-      <div className="api-url-input">
+      {/* Champ API URL avec bouton */}
+      <div className="api-url-input" style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
         <input
           type="text"
           value={apiUrl}
           onChange={(e) => setApiUrl(e.target.value)}
           title="Modifier l'URL de l'API"
           placeholder="URL API (optionnel)"
+          style={{ flexGrow: 1, padding: "6px 8px" }}
         />
+        <button onClick={handleConfirmClick} style={{ padding: "6px 12px", cursor: "pointer" }}>
+          Confirmer
+        </button>
       </div>
+      {confirmation && (
+        <div style={{ color: "green", marginBottom: "10px" }}>
+          URL de l'API mise à jour !
+        </div>
+      )}
 
       <div className="main-content">
         {/* Partie gauche : image */}
