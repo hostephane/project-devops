@@ -112,3 +112,11 @@ async def translate_manga(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"🔥 Erreur lors du traitement : {e}")
         return JSONResponse(content={"error": "Failed to process image"}, status_code=500)
+
+
+@app.on_event("startup")
+def warm_up_model():
+    logger.info("🔥 Warm-up des modèles au démarrage")
+    _ = get_reader()
+    _ = get_tokenizer()
+    _ = get_model()
