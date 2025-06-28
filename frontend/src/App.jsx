@@ -6,9 +6,12 @@ function App() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [bubbles, setBubbles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [apiUrl, setApiUrl] = useState("http://localhost:8000/translate-manga");
+  const [status, setStatus] = useState(null); // "processing", "done", "error"
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [apiUrl, setApiUrl] = useState("https://backend-production-4bc6.up.railway.app/translate-manga");
   const [confirmation, setConfirmation] = useState(false);
   const pollingInterval = useRef(null);
+  const pollingTimeout = useRef(null);
 
   useEffect(() => {
     if (!file) {
@@ -20,22 +23,30 @@ function App() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  useEffect(() => {
+    // Nettoyer polling si on quitte le composant
+    return () => {
+      clearInterval(pollingInterval.current);
+      clearTimeout(pollingTimeout.current);
+    };
+  }, []);
+
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
     setBubbles([]);
+    setStatus(null);
+    setErrorMsg(null);
   };
 
   const formatApiUrl = (url) => {
-    if (!url) return "http://localhost:8000/translate-manga";
-    // On ajoute /translate-manga si absent
+    if (!url) return "https://backend-production-4bc6.up.railway.app/translate-manga";
     return url.endsWith("/translate-manga")
       ? url
       : url.replace(/\/+$/, "") + "/translate-manga";
   };
 
   const getBaseApiUrl = (url) => {
-    // enlève /translate-manga à la fin pour construire /result
-    if (!url) return "http://localhost:8000";
+    if (!url) return "https://backend-production-4bc6.up.railway.app";
     return url.endsWith("/translate-manga")
       ? url.slice(0, -"/translate-manga".length)
       : url.replace(/\/+$/, "");
@@ -50,19 +61,27 @@ function App() {
 
       if (data.status === "done") {
         setBubbles(data.bubbles);
+        setStatus("done");
         setLoading(false);
         clearInterval(pollingInterval.current);
+        clearTimeout(pollingTimeout.current);
       } else if (data.status === "error") {
-        alert("Erreur lors du traitement : " + (data.error || "Unknown"));
+        setStatus("error");
+        setErrorMsg(data.error || "Unknown error");
         setLoading(false);
         clearInterval(pollingInterval.current);
+        clearTimeout(pollingTimeout.current);
+      } else {
+        setStatus("processing");
+        // status processing → on attend la prochaine boucle
       }
-      // sinon status = processing => on attend la prochaine boucle
     } catch (err) {
       console.error(err);
-      alert("Erreur réseau pendant la récupération du résultat.");
+      setStatus("error");
+      setErrorMsg("Erreur réseau pendant la récupération du résultat.");
       setLoading(false);
       clearInterval(pollingInterval.current);
+      clearTimeout(pollingTimeout.current);
     }
   };
 
@@ -72,6 +91,8 @@ function App() {
 
     setLoading(true);
     setBubbles([]);
+    setStatus(null);
+    setErrorMsg(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -91,14 +112,25 @@ function App() {
       const data = await response.json();
       if (!data.task_id) throw new Error("ID de tâche manquant");
 
+      setStatus("processing");
+
+      // Timeout au bout de 60 secondes pour arrêter le polling (à adapter)
+      pollingTimeout.current = setTimeout(() => {
+        clearInterval(pollingInterval.current);
+        setLoading(false);
+        setStatus("error");
+        setErrorMsg("Temps d’attente dépassé. Veuillez réessayer.");
+      }, 60000);
+
       // Lance le polling toutes les 2s
       pollingInterval.current = setInterval(() => {
         pollResult(data.task_id, baseApiUrl);
       }, 2000);
     } catch (error) {
       console.error("Erreur lors de la requête:", error);
-      alert("Erreur côté serveur.");
       setLoading(false);
+      setStatus("error");
+      setErrorMsg("Erreur côté serveur.");
     }
   };
 
@@ -146,6 +178,8 @@ function App() {
           </form>
 
           {loading && <p className="loading-text">Chargement...</p>}
+          {status === "processing" && <p>Traitement en cours...</p>}
+          {status === "error" && <p style={{ color: "red" }}>Erreur : {errorMsg}</p>}
         </div>
 
         <div className="right-panel">
