@@ -7,4 +7,5 @@ python-multipart
 pillow
 torch
 httpx
+psutil
 pytest
