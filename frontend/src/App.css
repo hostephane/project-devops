@@ -110,3 +110,19 @@ body {
   margin-bottom: 15px;
   border-radius: 6px;
 }
+
+.api-url-input input {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.api-url-input button {
+  background-color: #007bff;
+  border: none;
+  color: white;
+  border-radius: 4px;
+}
+
+.api-url-input button:hover {
+  background-color: #0056b3;
+}
