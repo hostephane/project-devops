@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
@@ -8,7 +8,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [apiUrl, setApiUrl] = useState("http://localhost:8000/translate-manga");
   const [confirmation, setConfirmation] = useState(false);
-  const pollingInterval = useRef(null);
 
   useEffect(() => {
     if (!file) {
@@ -27,59 +26,21 @@ function App() {
 
   const formatApiUrl = (url) => {
     if (!url) return "http://localhost:8000/translate-manga";
-    // On ajoute /translate-manga si absent
-    return url.endsWith("/translate-manga")
-      ? url
-      : url.replace(/\/+$/, "") + "/translate-manga";
-  };
-
-  const getBaseApiUrl = (url) => {
-    // enlève /translate-manga à la fin pour construire /result
-    if (!url) return "http://localhost:8000";
-    return url.endsWith("/translate-manga")
-      ? url.slice(0, -"/translate-manga".length)
-      : url.replace(/\/+$/, "");
-  };
-
-  const pollResult = async (taskId, baseUrl) => {
-    try {
-      const res = await fetch(`${baseUrl}/result?id=${taskId}`);
-      if (!res.ok) throw new Error("Erreur réseau");
-
-      const data = await res.json();
-
-      if (data.status === "done") {
-        setBubbles(data.bubbles);
-        setLoading(false);
-        clearInterval(pollingInterval.current);
-      } else if (data.status === "error") {
-        alert("Erreur lors du traitement : " + (data.error || "Unknown"));
-        setLoading(false);
-        clearInterval(pollingInterval.current);
-      }
-      // sinon status = processing => on attend la prochaine boucle
-    } catch (err) {
-      console.error(err);
-      alert("Erreur réseau pendant la récupération du résultat.");
-      setLoading(false);
-      clearInterval(pollingInterval.current);
-    }
+    // Si l'URL ne se termine pas par /translate-manga, on l'ajoute
+    return url.endsWith("/translate-manga") ? url : url.replace(/\/+$/, "") + "/translate-manga";
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!file) return;
 
-    setLoading(true);
-    setBubbles([]);
-
     const formData = new FormData();
     formData.append("file", file);
 
     const finalApiUrl = formatApiUrl(apiUrl);
-    const baseApiUrl = getBaseApiUrl(apiUrl);
     console.log("Requête API vers :", finalApiUrl);
 
+    setLoading(true);
     try {
       const response = await fetch(finalApiUrl, {
         method: "POST",
@@ -89,26 +50,22 @@ function App() {
       if (!response.ok) throw new Error("Erreur réseau");
 
       const data = await response.json();
-      if (!data.task_id) throw new Error("ID de tâche manquant");
-
-      // Lance le polling toutes les 2s
-      pollingInterval.current = setInterval(() => {
-        pollResult(data.task_id, baseApiUrl);
-      }, 2000);
+      setBubbles(data.bubbles);
     } catch (error) {
       console.error("Erreur lors de la requête:", error);
       alert("Erreur côté serveur.");
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const handleConfirmClick = () => {
     setConfirmation(true);
-    setTimeout(() => setConfirmation(false), 3000);
+    setTimeout(() => setConfirmation(false), 3000); // disparaît au bout de 3 secondes
   };
 
   return (
     <div className="app-container">
+      {/* Champ API URL avec bouton */}
       <div
         className="api-url-input"
         style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}
@@ -130,6 +87,7 @@ function App() {
       )}
 
       <div className="main-content">
+        {/* Partie gauche : image */}
         <div className="left-panel">
           <h2>Image chargée</h2>
           {previewUrl ? (
@@ -148,6 +106,7 @@ function App() {
           {loading && <p className="loading-text">Chargement...</p>}
         </div>
 
+        {/* Partie droite : traductions */}
         <div className="right-panel">
           <h2>Traductions des bulles</h2>
           {bubbles.length === 0 ? (
