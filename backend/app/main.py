@@ -1,6 +1,60 @@
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from io import BytesIO
+from PIL import Image
+import numpy as np
+from transformers import MarianMTModel, MarianTokenizer
+import easyocr
+import re
+from functools import lru_cache
+import logging
 import time
 import psutil
 import os
+
+# ⚠️ Déclaré en haut pour éviter les erreurs
+app = FastAPI()
+
+# Logger
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Caches pour les modèles
+@lru_cache()
+def get_reader():
+    logger.info("📦 Chargement du modèle EasyOCR...")
+    return easyocr.Reader(['ja', 'en'])
+
+@lru_cache()
+def get_tokenizer():
+    logger.info("📦 Chargement du tokenizer Marian...")
+    return MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
+
+@lru_cache()
+def get_model():
+    logger.info("📦 Chargement du modèle Marian...")
+    return MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
+
+def clean_text(text: str) -> str:
+    cleaned = re.sub(r"[^\wぁ-んァ-ン一-龥\s]", "", text)
+    return cleaned.strip()
+
+def translate_japanese_to_english(text: str) -> str:
+    tokenizer = get_tokenizer()
+    model = get_model()
+    inputs = tokenizer([text], return_tensors="pt", truncation=True, padding=True)
+    translated = model.generate(**inputs)
+    return tokenizer.decode(translated[0], skip_special_tokens=True)
 
 def log_resources(stage: str):
     process = psutil.Process(os.getpid())
