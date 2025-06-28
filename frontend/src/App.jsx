@@ -6,8 +6,8 @@ function App() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [bubbles, setBubbles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [apiUrl, setApiUrl] = useState("http://localhost:8000/translate-manga");
 
-  // Générer l'URL de preview de l'image quand file change
   useEffect(() => {
     if (!file) {
       setPreviewUrl(null);
@@ -15,19 +15,16 @@ function App() {
     }
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
-
-    // Nettoyer l'URL pour éviter les fuites mémoire
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
-    setBubbles([]); // reset traductions à chaque nouvelle image
+    setBubbles([]);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!file) return;
 
     const formData = new FormData();
@@ -35,7 +32,7 @@ function App() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/translate-manga", {
+      const response = await fetch(apiUrl || "http://localhost:8000/translate-manga", {
         method: "POST",
         body: formData,
       });
@@ -52,41 +49,55 @@ function App() {
   };
 
   return (
-    <div className="App" style={{ display: "flex", gap: "20px", padding: "20px" }}>
-      {/* Partie gauche : affichage image */}
-      <div style={{ flex: 1, border: "1px solid #ccc", padding: "10px" }}>
-        <h2>Image chargée</h2>
-        {previewUrl ? (
-          <img
-            src={previewUrl}
-            alt="Preview"
-            style={{ maxWidth: "100%", maxHeight: "80vh", objectFit: "contain" }}
-          />
-        ) : (
-          <p>Aucune image sélectionnée</p>
-        )}
-        <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-          <button type="submit" disabled={loading} style={{ marginLeft: "10px" }}>
-            Traduire
-          </button>
-        </form>
-        {loading && <p>Chargement...</p>}
+    <div className="app-container">
+      {/* Champ API URL (discret mais modifiable) */}
+      <div className="api-url-input">
+        <input
+          type="text"
+          value={apiUrl}
+          onChange={(e) => setApiUrl(e.target.value)}
+          title="Modifier l'URL de l'API"
+          placeholder="URL API (optionnel)"
+        />
       </div>
 
-      {/* Partie droite : traductions */}
-      <div style={{ flex: 1, border: "1px solid #ccc", padding: "10px", overflowY: "auto", maxHeight: "90vh" }}>
-        <h2>Traductions des bulles</h2>
-        {bubbles.length === 0 && <p>Aucune traduction pour l'instant</p>}
-        <ul style={{ listStyleType: "none", padding: 0 }}>
-          {bubbles.map((bubble, index) => (
-            <li key={index} style={{ marginBottom: "15px", borderBottom: "1px solid #eee", paddingBottom: "10px" }}>
-              <strong>Original :</strong> {bubble.original_text} <br />
-              <strong>Traduction :</strong> {bubble.translated_text} <br />
-              <em>Confiance : {bubble.confidence.toFixed(2)}</em>
-            </li>
-          ))}
-        </ul>
+      <div className="main-content">
+        {/* Partie gauche : image */}
+        <div className="left-panel">
+          <h2>Image chargée</h2>
+          {previewUrl ? (
+            <img src={previewUrl} alt="Preview" className="preview-image" />
+          ) : (
+            <p className="placeholder">Aucune image sélectionnée</p>
+          )}
+
+          <form onSubmit={handleSubmit} className="upload-form">
+            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <button type="submit" disabled={loading}>
+              Traduire
+            </button>
+          </form>
+
+          {loading && <p className="loading-text">Chargement...</p>}
+        </div>
+
+        {/* Partie droite : traductions */}
+        <div className="right-panel">
+          <h2>Traductions des bulles</h2>
+          {bubbles.length === 0 ? (
+            <p className="placeholder">Aucune traduction pour l'instant</p>
+          ) : (
+            <ul className="bubble-list">
+              {bubbles.map((bubble, index) => (
+                <li key={index} className="bubble-card">
+                  <strong>Original :</strong> {bubble.original_text} <br />
+                  <strong>Traduction :</strong> {bubble.translated_text} <br />
+                  <em>Confiance : {bubble.confidence.toFixed(2)}</em>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
