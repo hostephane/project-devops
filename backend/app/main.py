@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Query
+from fastapi import FastAPI, UploadFile, File, Query, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from io import BytesIO
@@ -112,7 +112,8 @@ async def translate_manga(file: UploadFile = File(...)):
     # Lancer la tâche de fond
     asyncio.create_task(process_translation(task_id, contents))
 
-    return {"task_id": task_id}
+    # Retourner réponse avec code 202 Accepted
+    return JSONResponse(content={"task_id": task_id}, status_code=status.HTTP_202_ACCEPTED)
 
 @app.get("/result")
 async def get_result(id: str = Query(...)):
