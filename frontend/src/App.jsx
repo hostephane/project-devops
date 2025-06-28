@@ -8,10 +8,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null); // "processing", "done", "error"
   const [errorMsg, setErrorMsg] = useState(null);
-  const [apiUrl, setApiUrl] = useState("https://backend-production-4bc6.up.railway.app/translate-manga");
-  const [confirmation, setConfirmation] = useState(false);
   const pollingInterval = useRef(null);
-  const pollingTimeout = useRef(null);
 
   useEffect(() => {
     if (!file) {
@@ -27,7 +24,6 @@ function App() {
     // Nettoyer polling si on quitte le composant
     return () => {
       clearInterval(pollingInterval.current);
-      clearTimeout(pollingTimeout.current);
     };
   }, []);
 
@@ -38,24 +34,18 @@ function App() {
     setErrorMsg(null);
   };
 
-  const formatApiUrl = (url) => {
-    if (!url) return "https://backend-production-4bc6.up.railway.app/translate-manga";
-    return url.endsWith("/translate-manga")
-      ? url
-      : url.replace(/\/+$/, "") + "/translate-manga";
-  };
-
-  const getBaseApiUrl = (url) => {
-    if (!url) return "https://backend-production-4bc6.up.railway.app";
-    return url.endsWith("/translate-manga")
-      ? url.slice(0, -"/translate-manga".length)
-      : url.replace(/\/+$/, "");
-  };
-
-  const pollResult = async (taskId, baseUrl) => {
+  const pollResult = async (taskId) => {
+    const baseApiUrl = "https://backend-production-4bc6.up.railway.app";
     try {
-      const res = await fetch(`${baseUrl}/result?id=${taskId}`);
+      console.log(`Polling /result?id=${taskId} ...`);
+      const res = await fetch(`${baseApiUrl}/result?id=${taskId}`);
+
       if (!res.ok) throw new Error("Erreur réseau");
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Réponse non JSON reçue");
+      }
 
       const data = await res.json();
 
@@ -63,25 +53,22 @@ function App() {
         setBubbles(data.bubbles);
         setStatus("done");
         setLoading(false);
-        clearInterval(pollingInterval.current);
-        clearTimeout(pollingTimeout.current);
+        clearInterval(pollingInterval.current); // stop polling
       } else if (data.status === "error") {
         setStatus("error");
-        setErrorMsg(data.error || "Unknown error");
+        setErrorMsg(data.error || "Erreur inconnue");
         setLoading(false);
-        clearInterval(pollingInterval.current);
-        clearTimeout(pollingTimeout.current);
+        clearInterval(pollingInterval.current); // stop polling
       } else {
+        // Toujours processing, on continue à poller
         setStatus("processing");
-        // status processing → on attend la prochaine boucle
       }
     } catch (err) {
       console.error(err);
       setStatus("error");
-      setErrorMsg("Erreur réseau pendant la récupération du résultat.");
+      setErrorMsg("Erreur lors du polling.");
       setLoading(false);
       clearInterval(pollingInterval.current);
-      clearTimeout(pollingTimeout.current);
     }
   };
 
@@ -97,12 +84,10 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const finalApiUrl = formatApiUrl(apiUrl);
-    const baseApiUrl = getBaseApiUrl(apiUrl);
-    console.log("Requête API vers :", finalApiUrl);
+    const baseApiUrl = "https://backend-production-4bc6.up.railway.app";
 
     try {
-      const response = await fetch(finalApiUrl, {
+      const response = await fetch(`${baseApiUrl}/translate-manga`, {
         method: "POST",
         body: formData,
       });
@@ -112,20 +97,13 @@ function App() {
       const data = await response.json();
       if (!data.task_id) throw new Error("ID de tâche manquant");
 
+      console.log("Démarrage du polling avec task_id:", data.task_id);
       setStatus("processing");
 
-      // Timeout au bout de 60 secondes pour arrêter le polling (à adapter)
-      pollingTimeout.current = setTimeout(() => {
-        clearInterval(pollingInterval.current);
-        setLoading(false);
-        setStatus("error");
-        setErrorMsg("Temps d’attente dépassé. Veuillez réessayer.");
-      }, 60000);
-
-      // Lance le polling toutes les 2s
+      clearInterval(pollingInterval.current);
       pollingInterval.current = setInterval(() => {
-        pollResult(data.task_id, baseApiUrl);
-      }, 2000);
+        pollResult(data.task_id);
+      }, 10000); // toutes les 10 secondes
     } catch (error) {
       console.error("Erreur lors de la requête:", error);
       setLoading(false);
@@ -134,33 +112,8 @@ function App() {
     }
   };
 
-  const handleConfirmClick = () => {
-    setConfirmation(true);
-    setTimeout(() => setConfirmation(false), 3000);
-  };
-
   return (
     <div className="app-container">
-      <div
-        className="api-url-input"
-        style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}
-      >
-        <input
-          type="text"
-          value={apiUrl}
-          onChange={(e) => setApiUrl(e.target.value)}
-          title="Modifier l'URL de l'API"
-          placeholder="URL API (optionnel)"
-          style={{ flexGrow: 1, padding: "6px 8px" }}
-        />
-        <button onClick={handleConfirmClick} style={{ padding: "6px 12px", cursor: "pointer" }}>
-          Confirmer
-        </button>
-      </div>
-      {confirmation && (
-        <div style={{ color: "green", marginBottom: "10px" }}>URL de l'API mise à jour !</div>
-      )}
-
       <div className="main-content">
         <div className="left-panel">
           <h2>Image chargée</h2>
