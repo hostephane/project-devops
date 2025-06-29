@@ -35,7 +35,7 @@ function App() {
   };
 
   const pollResult = async (taskId) => {
-    const baseApiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+    const baseApiUrl = import.meta.env.VITE_BACKEND_URL;
     try {
       console.log(`Polling /result?id=${taskId} ...`);
       const res = await fetch(`${baseApiUrl}/result?id=${taskId}`);
