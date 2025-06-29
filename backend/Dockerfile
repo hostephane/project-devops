@@ -4,15 +4,13 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl build-essential ca-certificates clang pkg-config libssl-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Installer rustup (pas rustc via apt)
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+# Installer rustup et Rust 1.70.0
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    /root/.cargo/bin/rustup install 1.70.0 && \
+    /root/.cargo/bin/rustup default 1.70.0
+
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Forcer Rust stable 1.70.0
-RUN rustup install 1.70.0
-RUN rustup default 1.70.0
-
-# Mettre à jour pip/setuptools/wheel
 RUN pip install --upgrade pip setuptools wheel
 
 WORKDIR /app
@@ -21,7 +19,6 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Nettoyer caches
 RUN rm -rf /root/.cache/pip /root/.cargo/registry
 
 RUN python -c "\

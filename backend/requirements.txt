@@ -1,5 +1,5 @@
 transformers==4.33.1
-tokenizers==0.13.3
+tokenizers==0.14.3
 fastapi
 uvicorn[standard]
 sentencepiece
