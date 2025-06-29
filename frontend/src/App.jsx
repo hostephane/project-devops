@@ -35,7 +35,7 @@ function App() {
   };
 
   const pollResult = async (taskId) => {
-    const baseApiUrl = "https://backend-production-4bc6.up.railway.app";
+    const baseApiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
     try {
       console.log(`Polling /result?id=${taskId} ...`);
       const res = await fetch(`${baseApiUrl}/result?id=${taskId}`);
@@ -84,7 +84,7 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-    const baseApiUrl = "https://backend-production-4bc6.up.railway.app";
+    const baseApiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
     try {
       const response = await fetch(`${baseApiUrl}/translate-manga`, {
