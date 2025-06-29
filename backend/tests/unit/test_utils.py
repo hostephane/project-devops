@@ -16,7 +16,7 @@ def test_translate_japanese_to_english(mock_get_model, mock_get_tokenizer):
         def decode(self, tokens, skip_special_tokens=True):
             return "translated text"
     class DummyModel:
-        def generate(self, inputs):
+        def generate(self, **kwargs):  # accepte kwargs pour éviter l'erreur
             return [[0]]
 
     mock_get_tokenizer.return_value = DummyTokenizer()
