@@ -34,51 +34,52 @@ function App() {
     setErrorMsg(null);
   };
 
-  const pollResultWithWhile = async (taskId) => {
-    const baseApiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-    let isProcessing = true;
+const pollResultWithWhile = async (taskId) => {
+  const baseApiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+  let isProcessing = true;
 
-    while (isProcessing) {
-      try {
-        console.log(`Polling /result?id=${taskId} ...`);
-        const res = await fetch(`${baseApiUrl}/result?id=${taskId}`);
+  while (isProcessing) {
+    try {
+      console.log(`Polling /result?id=${taskId} ...`);
+      const res = await fetch(`${baseApiUrl}/result?id=${taskId}`, { mode: "no-cors" });  // Ajout de mode no-cors
 
-        if (!res.ok) throw new Error("Erreur réseau");
+      if (!res.ok) throw new Error("Erreur réseau");
 
-        const contentType = res.headers.get("content-type") || "";
-        if (!contentType.includes("application/json")) {
-          throw new Error("Réponse non JSON reçue");
-        }
-
-        const data = await res.json();
-
-        if (data.status === "done") {
-          setBubbles(data.bubbles);
-          setStatus("done");
-          setLoading(false);
-          isProcessing = false; // stop the loop
-          console.log("Traitement terminé");
-        } else if (data.status === "error") {
-          setStatus("error");
-          setErrorMsg(data.error || "Erreur inconnue");
-          setLoading(false);
-          isProcessing = false; // stop the loop
-          console.log("Erreur dans le traitement");
-        } else {
-          setStatus("processing");
-          await new Promise(resolve => setTimeout(resolve, 30000)); // attendre 30 secondes avant de repoller
-        }
-      } catch (err) {
-        console.error(err);
-        setStatus("error");
-        setErrorMsg("Erreur lors du polling.");
-        setLoading(false);
-        // Ne pas arrêter la boucle en cas d'erreur CORS, continuer à poller
-        await new Promise(resolve => setTimeout(resolve, 30000)); // Attendre 30 secondes avant de re-essayer
-        console.log("Erreur détectée, mais le polling continue...");
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Réponse non JSON reçue");
       }
+
+      const data = await res.json();
+
+      if (data.status === "done") {
+        setBubbles(data.bubbles);
+        setStatus("done");
+        setLoading(false);
+        isProcessing = false; // stop the loop
+        console.log("Traitement terminé");
+      } else if (data.status === "error") {
+        setStatus("error");
+        setErrorMsg(data.error || "Erreur inconnue");
+        setLoading(false);
+        isProcessing = false; // stop the loop
+        console.log("Erreur dans le traitement");
+      } else {
+        setStatus("processing");
+        await new Promise(resolve => setTimeout(resolve, 30000)); // attendre 30 secondes avant de repoller
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("error");
+      setErrorMsg("Erreur lors du polling.");
+      setLoading(false);
+      // Ne pas arrêter la boucle en cas d'erreur CORS, continuer à poller
+      await new Promise(resolve => setTimeout(resolve, 30000)); // Attendre 30 secondes avant de re-essayer
+      console.log("Erreur détectée, mais le polling continue...");
     }
-  };
+  }
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
