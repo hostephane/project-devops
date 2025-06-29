@@ -4,10 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from io import BytesIO
 from PIL import Image
 import numpy as np
-from transformers import MarianMTModel, MarianTokenizer
 import easyocr
 import re
-from functools import lru_cache
 import logging
 import time
 import psutil
@@ -15,10 +13,15 @@ import os
 import uuid
 import asyncio
 
-app = FastAPI()
+import mlflow
+from mlflow.tracking import MlflowClient
+from transformers import pipeline
+from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,31 +31,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 🔁 EasyOCR : Reader chargé en cache
 @lru_cache()
 def get_reader():
     logger.info("📦 Chargement du modèle EasyOCR...")
     return easyocr.Reader(['ja', 'en'])
 
+# 🔁 MLflow : Charger pipeline de traduction depuis DagsHub
 @lru_cache()
-def get_tokenizer():
-    logger.info("📦 Chargement du tokenizer Marian...")
-    return MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
+def get_translation_pipeline():
+    logger.info("Fetching translation pipeline from MLflow (DagsHub)...")
 
-@lru_cache()
-def get_model():
-    logger.info("📦 Chargement du modèle Marian...")
-    return MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
+    # Config DagsHub MLflow
+    mlflow.set_tracking_uri("https://dagshub.com/hostephane/ML.mlflow")
+    mlflow.set_experiment("manga_ocr_translation")
 
+    client = MlflowClient()
+    experiment = client.get_experiment_by_name("manga_ocr_translation")
+    runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["start_time DESC"])
+    latest_run = runs[0]
+    model_uri = f"runs:/{latest_run.info.run_id}/translation_pipeline"
+
+    logger.info(f"Loading translation model from: {model_uri}")
+    return mlflow.transformers.load_model(model_uri)
+
+# Nettoyage du texte OCR
 def clean_text(text: str) -> str:
     cleaned = re.sub(r"[^\wぁ-んァ-ン一-龥\s]", "", text)
     return cleaned.strip()
 
+# Traduction via pipeline MLflow
 def translate_japanese_to_english(text: str) -> str:
-    tokenizer = get_tokenizer()
-    model = get_model()
-    inputs = tokenizer([text], return_tensors="pt", truncation=True, padding=True)
-    translated = model.generate(**inputs)
-    return tokenizer.decode(translated[0], skip_special_tokens=True)
+    pipeline = get_translation_pipeline()
+    result = pipeline(text)
+    return result[0]['translation_text']
 
 def log_resources(stage: str):
     process = psutil.Process(os.getpid())
@@ -136,5 +148,4 @@ async def health():
 def warm_up_model():
     logger.info("🔥 Warm-up des modèles au démarrage")
     _ = get_reader()
-    _ = get_tokenizer()
-    _ = get_model()
+    _ = get_translation_pipeline()

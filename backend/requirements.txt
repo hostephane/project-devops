@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-transformers
+transformers==4.33.1
 sentencepiece
 easyocr
 python-multipart
@@ -9,3 +9,4 @@ torch
 httpx
 psutil
 pytest
+mlflow[extras]
