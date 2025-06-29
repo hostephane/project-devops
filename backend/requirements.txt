@@ -1,6 +1,7 @@
+transformers==4.33.1
+tokenizers==0.13.3
 fastapi
 uvicorn[standard]
-transformers==4.33.1
 sentencepiece
 easyocr
 python-multipart

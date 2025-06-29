@@ -1,10 +1,11 @@
+# Étape 1 : builder - construction et installation des dépendances
 FROM python:3.12-slim as builder
 
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl build-essential ca-certificates && \
+    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl build-essential ca-certificates clang pkg-config libssl-dev rustc && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Installer Rust toolchain
+# Installer Rust toolchain via rustup (optionnel mais recommandé)
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
@@ -14,10 +15,9 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Supprimer cache pip inutile (optionnel)
 RUN rm -rf /root/.cache/pip
 
-# Tes commandes python pour pré-télécharger les modèles
+# Pré-charger les modèles pour éviter ce temps au runtime
 RUN python -c "\
 import easyocr; easyocr.Reader(['ja', 'en']); \
 from transformers import MarianMTModel, MarianTokenizer; \
@@ -26,7 +26,7 @@ MarianMTModel.from_pretrained('Helsinki-NLP/opus-mt-ja-en')"
 
 COPY . .
 
-# --- image finale ---
+# Étape 2 : image finale légère
 FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y \
