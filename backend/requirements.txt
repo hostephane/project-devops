@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
-transformers>=4.30.0
+transformers==4.33.1
+tokenizers>=0.13.5
 sentencepiece
 easyocr
 python-multipart
@@ -9,4 +10,4 @@ torch
 httpx
 psutil
 pytest
-tokenizers>=0.13.5
+mlflow[extras]
