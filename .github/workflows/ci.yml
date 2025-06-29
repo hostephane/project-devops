@@ -66,7 +66,6 @@ jobs:
         image: jhoozou/project-devops:latest
         ports:
           - 8000:8000
-        # healthcheck retiré ici pour éviter l’échec du conteneur
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v3
@@ -82,14 +81,29 @@ jobs:
 
       - name: Start frontend server
         working-directory: ./frontend
-        run: npm run dev &
+        run: |
+          npm run dev &
+          sleep 5
 
       - name: Wait for frontend to be available
         run: |
-          for i in {1..30}; do
-            curl -f http://localhost:5173 && break
-            echo "Waiting for frontend..."
-            sleep 2
+          timeout=60
+          start_time=$(date +%s)
+
+          while true; do
+            if curl -f http://localhost:5173; then
+              echo "Frontend is up!"
+              break
+            else
+              echo "Waiting for frontend..."
+              sleep 3
+            fi
+            now=$(date +%s)
+            elapsed=$(( now - start_time ))
+            if [ $elapsed -ge $timeout ]; then
+              echo "Timeout waiting for frontend"
+              exit 1
+            fi
           done
 
       - name: Install Cypress dependencies
