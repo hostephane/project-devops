@@ -2,8 +2,8 @@ fastapi
 uvicorn[standard]
 pytest
 python-multipart
-transformers
+transformers==4.33.1
 sentencepiece
 easyocr
 httpx
-python-multipart
+mlflow[extras]
