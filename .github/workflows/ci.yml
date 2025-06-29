@@ -66,12 +66,6 @@ jobs:
         image: jhoozou/project-devops:latest
         ports:
           - 8000:8000
-        # Healthcheck retiré ici pour éviter les erreurs de démarrage lent
-        # options:
-        #   --health-cmd "curl -f http://localhost:8000/health || exit 1"
-        #   --health-interval 10s
-        #   --health-timeout 5s
-        #   --health-retries 5
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v3
@@ -81,9 +75,21 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
         working-directory: ./frontend
         run: npm install
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: npm run dev &
+
+      - name: Wait for frontend to be available
+        run: |
+          for i in {1..30}; do
+            curl -f http://localhost:5173 && break
+            echo "Waiting for frontend..."
+            sleep 2
+          done
 
       - name: Install Cypress dependencies
         working-directory: ./frontend
@@ -115,5 +121,4 @@ jobs:
       - name: Push Docker image
         run: docker push jhoozou/project-devops:latest
 
-      # Ajouter étape de déploiement vers ta plateforme cloud
-      # Par exemple Railway, Koyeb, etc.
+      # Ajouter étape de déploiement vers ta plateforme cloud (Railway, Koyeb, etc.)
