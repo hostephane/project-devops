@@ -34,41 +34,45 @@ function App() {
     setErrorMsg(null);
   };
 
-  const pollResult = async (taskId) => {
+  const pollResultWithWhile = async (taskId) => {
     const baseApiUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
-    try {
-      console.log(`Polling /result?id=${taskId} ...`);
-      const res = await fetch(`${baseApiUrl}/result?id=${taskId}`);
+    let isProcessing = true;
 
-      if (!res.ok) throw new Error("Erreur réseau");
+    while (isProcessing) {
+      try {
+        console.log(`Polling /result?id=${taskId} ...`);
+        const res = await fetch(`${baseApiUrl}/result?id=${taskId}`);
 
-      const contentType = res.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
-        throw new Error("Réponse non JSON reçue");
-      }
+        if (!res.ok) throw new Error("Erreur réseau");
 
-      const data = await res.json();
+        const contentType = res.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          throw new Error("Réponse non JSON reçue");
+        }
 
-      if (data.status === "done") {
-        setBubbles(data.bubbles);
-        setStatus("done");
-        setLoading(false);
-        clearInterval(pollingInterval.current); // stop polling
-      } else if (data.status === "error") {
+        const data = await res.json();
+
+        if (data.status === "done") {
+          setBubbles(data.bubbles);
+          setStatus("done");
+          setLoading(false);
+          isProcessing = false; // stop the loop
+        } else if (data.status === "error") {
+          setStatus("error");
+          setErrorMsg(data.error || "Erreur inconnue");
+          setLoading(false);
+          isProcessing = false; // stop the loop
+        } else {
+          setStatus("processing");
+          await new Promise(resolve => setTimeout(resolve, 30000)); // attendre 30 secondes avant de repoller
+        }
+      } catch (err) {
+        console.error(err);
         setStatus("error");
-        setErrorMsg(data.error || "Erreur inconnue");
+        setErrorMsg("Erreur lors du polling.");
         setLoading(false);
-        clearInterval(pollingInterval.current); // stop polling
-      } else {
-        // Toujours processing, on continue à poller
-        setStatus("processing");
+        isProcessing = false; // stop the loop
       }
-    } catch (err) {
-      console.error(err);
-      setStatus("error");
-      setErrorMsg("Erreur lors du polling.");
-      setLoading(false);
-      clearInterval(pollingInterval.current);
     }
   };
 
@@ -100,10 +104,8 @@ function App() {
       console.log("Démarrage du polling avec task_id:", data.task_id);
       setStatus("processing");
 
-      clearInterval(pollingInterval.current);
-      pollingInterval.current = setInterval(() => {
-        pollResult(data.task_id);
-      }, 10000); // toutes les 10 secondes
+      // Utilisation de la boucle while
+      await pollResultWithWhile(data.task_id);
     } catch (error) {
       console.error("Erreur lors de la requête:", error);
       setLoading(false);
