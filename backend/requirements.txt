@@ -1,9 +1,11 @@
 fastapi
 uvicorn[standard]
-pytest
-python-multipart
 transformers
 sentencepiece
 easyocr
-httpx
 python-multipart
+pillow
+torch
+httpx
+psutil
+pytest

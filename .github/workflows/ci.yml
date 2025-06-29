@@ -36,7 +36,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install frontend dependencies
         working-directory: ./frontend
@@ -56,6 +56,65 @@ jobs:
 
       - name: Force push dev to staging branch
         run: git push -f origin dev:staging
+
+  e2e-tests:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    services:
+      backend:
+        image: jhoozou/project-devops:latest
+        ports:
+          - 8000:8000
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Start frontend server
+        working-directory: ./frontend
+        run: |
+          npm run dev &
+          sleep 5
+
+      - name: Wait for frontend to be available
+        run: |
+          timeout=60
+          start_time=$(date +%s)
+
+          while true; do
+            if curl -f http://localhost:5173; then
+              echo "Frontend is up!"
+              break
+            else
+              echo "Waiting for frontend..."
+              sleep 3
+            fi
+            now=$(date +%s)
+            elapsed=$(( now - start_time ))
+            if [ $elapsed -ge $timeout ]; then
+              echo "Timeout waiting for frontend"
+              exit 1
+            fi
+          done
+
+      - name: Install Cypress dependencies
+        working-directory: ./frontend
+        run: npm install cypress-file-upload
+
+      - name: Run Cypress tests
+        working-directory: ./frontend
+        run: npx cypress run
+        env:
+          VITE_BACKEND_URL: http://localhost:8000
 
   build-and-deploy:
     needs: build-and-test
@@ -77,5 +136,4 @@ jobs:
       - name: Push Docker image
         run: docker push jhoozou/project-devops:latest
 
-      # Ajouter étape de déploiement vers ta plateforme cloud
-      # Par exemple pour Railway avec leur CLI, Koyeb, etc.
+      # Ajouter étape de déploiement vers ta plateforme cloud (Railway, Koyeb, etc.)
