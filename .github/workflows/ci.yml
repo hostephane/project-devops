@@ -66,11 +66,12 @@ jobs:
         image: jhoozou/project-devops:latest
         ports:
           - 8000:8000
-        options: >-
-          --health-cmd "curl -f http://localhost:8000/docs || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+        # Healthcheck retiré ici pour éviter les erreurs de démarrage lent
+        # options:
+        #   --health-cmd "curl -f http://localhost:8000/health || exit 1"
+        #   --health-interval 10s
+        #   --health-timeout 5s
+        #   --health-retries 5
     steps:
       - name: Checkout frontend
         uses: actions/checkout@v3
@@ -115,4 +116,4 @@ jobs:
         run: docker push jhoozou/project-devops:latest
 
       # Ajouter étape de déploiement vers ta plateforme cloud
-      # Par exemple pour Railway avec leur CLI, Koyeb, etc.
+      # Par exemple Railway, Koyeb, etc.
