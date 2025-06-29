@@ -31,6 +31,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
+      # --- NOUVELLE ÉTAPE : démarrer le serveur API en arrière-plan ---
+      - name: Start backend API server
+        working-directory: ./backend
+        run: |
+          # Lancer uvicorn en tâche de fond
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          # Attendre que le serveur soit disponible (max 30 secondes)
+          for i in {1..30}; do
+            nc -z localhost 8000 && break
+            echo "Waiting for backend API to start..."
+            sleep 1
+          done
+
       - name: Run backend tests
         working-directory: ./backend
         env:
