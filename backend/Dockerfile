@@ -1,13 +1,19 @@
-# Étape 1 : builder - construction et installation des dépendances
 FROM python:3.12-slim as builder
 
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl build-essential ca-certificates clang pkg-config libssl-dev rustc && \
+    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl build-essential ca-certificates clang pkg-config libssl-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Installer Rust toolchain via rustup (optionnel mais recommandé)
+# Installer rustup (pas rustc via apt)
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Forcer Rust stable 1.70.0
+RUN rustup install 1.70.0
+RUN rustup default 1.70.0
+
+# Mettre à jour pip/setuptools/wheel
+RUN pip install --upgrade pip setuptools wheel
 
 WORKDIR /app
 
@@ -15,9 +21,9 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN rm -rf /root/.cache/pip
+# Nettoyer caches
+RUN rm -rf /root/.cache/pip /root/.cargo/registry
 
-# Pré-charger les modèles pour éviter ce temps au runtime
 RUN python -c "\
 import easyocr; easyocr.Reader(['ja', 'en']); \
 from transformers import MarianMTModel, MarianTokenizer; \
@@ -26,7 +32,6 @@ MarianMTModel.from_pretrained('Helsinki-NLP/opus-mt-ja-en')"
 
 COPY . .
 
-# Étape 2 : image finale légère
 FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y \
