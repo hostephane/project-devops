@@ -44,8 +44,8 @@ COPY --from=builder /app /app
 
 EXPOSE 8000
 
-# Healthcheck pour vérifier que l’app répond bien sur /health
-HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+# Healthcheck avec délai de démarrage plus long (start-period=60s)
+HEALTHCHECK --interval=10s --timeout=3s --start-period=60s --retries=5 \
   CMD curl --fail http://localhost:8000/health || exit 1
 
 # Commande de lancement du backend
