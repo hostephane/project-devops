@@ -115,17 +115,20 @@ async def translate_manga(file: UploadFile = File(...)):
     # Retourner réponse avec code 202 Accepted
     return JSONResponse(content={"task_id": task_id}, status_code=status.HTTP_202_ACCEPTED)
 
+from fastapi.responses import JSONResponse
+
 @app.get("/result")
 async def get_result(id: str = Query(...)):
     task = tasks.get(id)
     if not task:
-        return JSONResponse(status_code=404, content={"error": "Task not found"})
+        return JSONResponse(status_code=404, content={"error": "Task not found"}, headers={"Access-Control-Allow-Origin": "*"})
     if task["status"] == "processing":
-        return {"status": "processing"}
+        return JSONResponse(content={"status": "processing"}, headers={"Access-Control-Allow-Origin": "*"})
     elif task["status"] == "done":
-        return {"status": "done", "bubbles": task["result"]}
+        return JSONResponse(content={"status": "done", "bubbles": task["result"]}, headers={"Access-Control-Allow-Origin": "*"})
     else:
-        return {"status": "error", "error": task.get("error", "Unknown error")}
+        return JSONResponse(content={"status": "error", "error": task.get("error", "Unknown error")}, headers={"Access-Control-Allow-Origin": "*"})
+
 
 # Endpoint healthcheck pour Docker healthcheck
 @app.get("/health")
