@@ -127,6 +127,11 @@ async def get_result(id: str = Query(...)):
     else:
         return {"status": "error", "error": task.get("error", "Unknown error")}
 
+# Endpoint healthcheck pour Docker healthcheck
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 @app.on_event("startup")
 def warm_up_model():
     logger.info("🔥 Warm-up des modèles au démarrage")

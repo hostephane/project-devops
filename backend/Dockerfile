@@ -3,7 +3,7 @@ FROM python:3.12-slim as builder
 
 # Installer les bibliothèques système nécessaires
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx && \
+    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -32,7 +32,7 @@ FROM python:3.12-slim
 
 # Installer les bibliothèques système nécessaires
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx && \
+    libglib2.0-0 libsm6 libxrender1 libxext6 libgl1-mesa-glx curl && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -43,6 +43,10 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /app /app
 
 EXPOSE 8000
+
+# Healthcheck pour vérifier que l’app répond bien sur /health
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+  CMD curl --fail http://localhost:8000/health || exit 1
 
 # Commande de lancement du backend
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
