@@ -13,9 +13,7 @@ import os
 import uuid
 import asyncio
 
-import mlflow
-from mlflow.tracking import MlflowClient
-from transformers import pipeline
+from transformers import MarianTokenizer, MarianMTModel, pipeline
 from functools import lru_cache
 
 logging.basicConfig(level=logging.INFO)
@@ -37,33 +35,23 @@ def get_reader():
     logger.info("📦 Chargement du modèle EasyOCR...")
     return easyocr.Reader(['ja', 'en'])
 
-# 🔁 MLflow : Charger pipeline de traduction depuis DagsHub
+# 🔁 Chargement local du pipeline de traduction (Helsinki-NLP)
 @lru_cache()
 def get_translation_pipeline():
-    logger.info("Fetching translation pipeline from MLflow (DagsHub)...")
-
-    # Config DagsHub MLflow
-    mlflow.set_tracking_uri("https://dagshub.com/hostephane/ML.mlflow")
-    mlflow.set_experiment("manga_ocr_translation")
-
-    client = MlflowClient()
-    experiment = client.get_experiment_by_name("manga_ocr_translation")
-    runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["start_time DESC"])
-    latest_run = runs[0]
-    model_uri = f"runs:/{latest_run.info.run_id}/translation_pipeline"
-
-    logger.info(f"Loading translation model from: {model_uri}")
-    return mlflow.transformers.load_model(model_uri)
+    logger.info("📦 Chargement du pipeline de traduction (MarianMT)...")
+    tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
+    model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-ja-en")
+    return pipeline("translation", model=model, tokenizer=tokenizer)
 
 # Nettoyage du texte OCR
 def clean_text(text: str) -> str:
     cleaned = re.sub(r"[^\wぁ-んァ-ン一-龥\s]", "", text)
     return cleaned.strip()
 
-# Traduction via pipeline MLflow
+# Traduction via pipeline local
 def translate_japanese_to_english(text: str) -> str:
-    pipeline = get_translation_pipeline()
-    result = pipeline(text)
+    pipeline_model = get_translation_pipeline()
+    result = pipeline_model(text)
     return result[0]['translation_text']
 
 def log_resources(stage: str):

@@ -1,7 +1,7 @@
 name: CI Pipeline
 
 permissions:
-  contents: write  # Permet à GitHub Actions de faire des pushs dans le repo
+  contents: write
 
 on:
   pull_request:
@@ -12,7 +12,22 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:20.10.16-dind
+        options: --privileged
     steps:
+      - name: Cleanup disk before job
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get clean
+          docker system prune -af || true
+          docker volume prune -f || true
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -21,17 +36,47 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install backend dependencies
+      - name: Install Rust (for tokenizers compilation)
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install backend dependencies (for unit tests)
         run: |
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
 
-      - name: Run backend tests
+      - name: Run backend unit tests
         working-directory: ./backend
         env:
           PYTHONPATH: ${{ github.workspace }}/backend
+        run: pytest tests/unit
+
+      - name: Build backend Docker image
+        run: docker build -f backend/Dockerfile -t my-backend:ci backend/
+
+      - name: Run backend container
         run: |
-          pytest tests/unit tests/integration || exit 1
+          docker run -d --name backend-test -p 8000:8000 my-backend:ci
+          for i in {1..30}; do
+            curl -f http://localhost:8000/healthcheck && break
+            echo "Waiting for backend container to be ready..."
+            sleep 1
+          done
+
+      - name: Run backend integration tests
+        working-directory: ./backend
+        env:
+          BACKEND_URL: http://localhost:8000
+          PYTHONPATH: ${{ github.workspace }}/backend
+        run: pytest tests/integration
+
+      - name: Stop backend container & clean docker
+        run: |
+          docker stop backend-test || true
+          docker rm backend-test || true
+          docker system prune -af || true
+          docker volume prune -f || true
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -67,6 +112,17 @@ jobs:
         ports:
           - 8000:8000
     steps:
+      - name: Cleanup disk before e2e
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get clean
+          docker system prune -af || true
+          docker volume prune -f || true
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Checkout frontend
         uses: actions/checkout@v3
 
@@ -89,7 +145,6 @@ jobs:
         run: |
           timeout=60
           start_time=$(date +%s)
-
           while true; do
             if curl -f http://localhost:5173; then
               echo "Frontend is up!"
@@ -121,6 +176,17 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+      - name: Cleanup disk before build-and-deploy
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt-get clean
+          docker system prune -af || true
+          docker volume prune -f || true
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Checkout code
         uses: actions/checkout@v3
 
